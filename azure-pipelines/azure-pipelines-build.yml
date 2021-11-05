@@ -7,64 +7,52 @@ parameters:
 jobs:
 - job: PlanningPokerApp
   displayName: PlanningPoker App
-
   pool:
     vmImage: ubuntu-latest
-
   workspace:
     clean: all
-
   variables:
     RunEnd2EndTests: ${{ parameters.RunEnd2EndTests }}
     PublishArtifacts: ${{ parameters.PublishArtifacts }}
-
   steps:
   - task: UseDotNet@2
     displayName: Install .NET SDK
     inputs:
       version: 5.0.x
-
   - task: NodeTool@0
     displayName: Install Node.js
     inputs:
       versionSpec: 14.x
-
   - pwsh: './scripts/UpdateVersion.ps1 -VersionNumber $env:BUILD_BUILDID'
     displayName: 'PowerShell UpdateVersion.ps1'
     failOnStderr: true
-
   - task: Npm@1
     displayName: npm install
     inputs:
       command: install
     condition: and(succeeded(), eq(variables['RunEnd2EndTests'], 'true'))
-
   - task: DotNetCoreCLI@2
     displayName: dotnet restore
     inputs:
       command: restore
       projects: $(BuildProjects)
       arguments: --verbosity normal
-
   - task: DotNetCoreCLI@2
     displayName: dotnet build
     inputs:
       command: build
       projects: $(BuildProjects)
       arguments: --configuration $(BuildConfiguration) --verbosity normal
-
   - task: DotNetCoreCLI@2
     displayName: dotnet test
     inputs:
       command: test
       projects: '$(Build.SourcesDirectory)/Build/bin/$(BuildConfiguration)/net5.0/*.Test.dll'
       testRunTitle: Planning Poker
-
   - pwsh: .\node_modules\.bin\selenium-standalone install
     displayName: Install Selenium
     workingDirectory: $(Build.SourcesDirectory)
     condition: and(succeeded(), eq(variables['RunEnd2EndTests'], 'true'))
-
   - task: DotNetCoreCLI@2
     displayName: dotnet test Duracellko.PlanningPoker.E2ETest
     inputs:
@@ -72,7 +60,6 @@ jobs:
       projects: '$(Build.SourcesDirectory)/Build/bin/$(BuildConfiguration)/net5.0/Duracellko.PlanningPoker.E2ETest.dll'
       testRunTitle: Planning Poker E2E
     condition: and(succeeded(), eq(variables['RunEnd2EndTests'], 'true'))
-
   - task: DotNetCoreCLI@2
     displayName: dotnet publish
     inputs:
@@ -82,7 +69,6 @@ jobs:
       arguments: --configuration $(BuildConfiguration) --verbosity normal
       zipAfterPublish: false
     condition: and(succeeded(), eq(variables['PublishArtifacts'], 'true'))
-
   - task: ArchiveFiles@2
     displayName: Zip web
     inputs:
@@ -92,14 +78,12 @@ jobs:
       includeRootFolder: false
       replaceExistingArchive: true
     condition: and(succeeded(), eq(variables['PublishArtifacts'], 'true'))
-
   - task: PublishBuildArtifacts@1
     displayName: 'Publish artifact: web'
     inputs:
       PathtoPublish: $(Build.StagingDirectory)/web
       ArtifactName: web
     condition: and(succeeded(), eq(variables['PublishArtifacts'], 'true'))
-
   - task: CopyFiles@2
     displayName: Copy screenshots
     inputs:
@@ -107,7 +91,6 @@ jobs:
       TargetFolder: $(Build.Build.StagingDirectory)/screenshots
       CleanTargetFolder: true
     condition: and(succeeded(), eq(variables['RunEnd2EndTests'], 'true'))
-
   - task: PublishBuildArtifacts@1
     displayName: 'Publish artifact: screenshots'
     inputs:
